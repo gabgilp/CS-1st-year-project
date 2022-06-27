@@ -28,7 +28,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
 
     case OP_ERR:
       printf("ERR\n");
-      printf("Encountered an error, program stopped.\n")
+      printf("Encountered an error, program stopped.\n");
       return false;
       break;
 
