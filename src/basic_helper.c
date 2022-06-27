@@ -11,9 +11,13 @@ word_t bytes_to_word_M (byte_t *byte){
 
 word_t byte_to_word_S (byte_t *byte){
   word_t num;
+  
+  if(*byte > 0x7F){
+    num = 0xFFFFFF00 + *byte;
+    return num;
+  }
 
-  num = *byte * 0x1;
-
+  num = *byte;
   return num;
 }
 

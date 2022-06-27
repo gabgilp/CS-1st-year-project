@@ -10,11 +10,11 @@ typedef struct node{
 
 typedef struct stack{
     node_t *top;
-    int size;
+    unsigned int size;
 } stack_t;
 
-void push(stack_t stack, word_t word);
+void push(stack_t *the_stack, word_t word);
 
-word_t pop(stack_t stack);
+word_t pop(stack_t *the_stack);
 
 #endif
