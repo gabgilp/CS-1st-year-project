@@ -1,5 +1,6 @@
 #include "basic_helper.h"
 #include "ijvm.h"
+#include <stdint.h>
 
 word_t bytes_to_word_M (byte_t *byte){
   word_t num;

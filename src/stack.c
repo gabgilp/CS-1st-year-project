@@ -45,3 +45,13 @@ word_t pop(stack_t *the_stack){
     free(temp_node);
     return temp_word;
 }
+
+word_t *to_array(stack_t *the_stack, word_t *the_array){
+    node_t *temp = the_stack->top;
+    for(int i = 0; i < the_stack->size; i++){
+        the_array[i] = temp->data;
+        temp = temp->next;
+    }
+
+    return the_array;
+}

@@ -2,6 +2,11 @@
 #include "basic_helper.h"
 #include "stack.h"
 #include "ijvm.h"
+#include <stdio.h>
+
+FILE * in;
+FILE * out;
+bool is_finished = false;
 
 bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
 
@@ -29,6 +34,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
     case OP_ERR:
       printf("ERR\n");
       printf("Encountered an error, program stopped.\n");
+      is_finished = true;
       return false;
       break;
 
@@ -40,6 +46,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
 
     case OP_HALT:
       printf("HALT\n");
+      is_finished = true;
       return false;
       break;
 
@@ -108,6 +115,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
       break;
 
     case OP_IN:
+      //TODO ask wether it is input from file or from CL
       printf("IN\n");
       *pc += 1;
       break;
@@ -164,7 +172,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
     case OP_OUT:
       printf("OUT\n");
       num1 = pop(the_stack);
-      printf("%c", num1);
+      // ask ta what to do afterwards
       *pc += 1;
       break;
 
@@ -187,6 +195,10 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
       printf("WIDE\n");
       *pc += 1;
       break;
+
+    default:
+    is_finished = true;
+    return false;
   }
   return true;
 }

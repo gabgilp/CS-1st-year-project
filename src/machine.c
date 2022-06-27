@@ -1,5 +1,6 @@
 #include <ijvm.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "stack.h"
 #include "basic_helper.h"
 #include "instructions_helper.h"
@@ -10,6 +11,7 @@ byte_t *first_byte;
 block_t constant_pool;
 block_t text;
 stack_t *the_stack;
+word_t *stack_array = NULL;
 
 int init_ijvm(char *binary_file)
 {
@@ -72,6 +74,7 @@ void destroy_ijvm()
     free(temp);
   }
 
+  free(stack_array);
   free(the_stack);
 }
 
@@ -82,12 +85,12 @@ void run()
 
 void set_input(FILE *fp)
 {
-  // TODO: implement me
+  in = fp;
 }
 
 void set_output(FILE *fp)
 {
-  // TODO: implement me
+  out = fp;
 }
 
 int get_program_counter(void) {
@@ -102,15 +105,38 @@ byte_t *get_text(void){
   return text.block_starting_byte;
 }
 
-//TODO
 word_t tos(void){
   return the_stack->top->data;
 }
 
-//TODO
 bool step(void){
   if (program_counter >= text.size){
     return false;
   }
   return interpret_instruction(text.block_starting_byte, &program_counter, the_stack);
+}
+
+int stack_size(void){
+  return the_stack->size;
+}
+
+word_t *get_stack(void){
+  if(stack_array == NULL){
+    stack_array = (word_t*) malloc(sizeof(word_t) * the_stack->size);
+  }
+  else{
+    stack_array = (word_t*) realloc(stack_array, sizeof(word_t) * the_stack->size);
+  }
+  return to_array(the_stack, stack_array);
+}
+
+bool finished(void){
+  if(program_counter >= text.size){
+    is_finished = true;
+  }
+  return is_finished;
+}
+
+byte_t get_instruction(void){
+  return text.block_starting_byte[program_counter];
 }

@@ -17,4 +17,6 @@ void push(stack_t *the_stack, word_t word);
 
 word_t pop(stack_t *the_stack);
 
+word_t *to_array(stack_t *the_stack, word_t *the_array);
+
 #endif

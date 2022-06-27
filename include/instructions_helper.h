@@ -5,6 +5,10 @@
 #include "stack.h"
 #include "basic_helper.h"
 
+extern FILE * in;
+extern FILE * out;
+extern bool is_finished;
+
 bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack);
 
 #endif
