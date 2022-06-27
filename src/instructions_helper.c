@@ -3,32 +3,39 @@
 #include "stack.h"
 #include "ijvm.h"
 
-bool interpret_instruction(byte_t instruction[], unsigned int *pc, stack_t *the_stack){
+bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
+
+  short_t offset;
   word_t num1;
   word_t num2;
+
   switch(instruction[*pc]){
 
     case OP_BIPUSH:
       printf("BIPUSH\n");
-      word_t data = byte_to_word_S(&instruction[(*pc) + 1]);
-      push(the_stack, data);
+      num1 = byte_to_word_S(&instruction[(*pc) + 1]);
+      push(the_stack, num1);
       *pc += 2;
       break;
 
     case OP_DUP:
       printf("DUP\n");
+      num1 = pop(the_stack);
+      push(the_stack, num1);
+      push(the_stack, num1);
       *pc += 1;
       break;
 
     case OP_ERR:
       printf("ERR\n");
+      printf("Encountered an error, program stopped.\n")
       return false;
       break;
 
     case OP_GOTO:
       printf("GOTO\n");
-      //the pc is incremented now but when functionality is added it should updated accordingly
-      *pc += 3;
+      offset = bytes_to_short(&instruction[(*pc) + 1]);
+      *pc += (int) offset;
       break;
 
     case OP_HALT:
@@ -62,19 +69,31 @@ bool interpret_instruction(byte_t instruction[], unsigned int *pc, stack_t *the_
 
     case OP_IFEQ:
       printf("IFEQ\n");
-      //the pc is incremented now but when functionality is added it should updated accordingly
+      if(pop(the_stack) == 0){
+        offset = bytes_to_short(&instruction[(*pc) + 1]);
+        *pc += (int) offset;
+        break;
+      }
       *pc += 3;
       break;
 
     case OP_IFLT:
       printf("IFLT\n");
-      //the pc is incremented now but when functionality is added it should updated accordingly
+      if(pop(the_stack) < 0){
+        offset = bytes_to_short(&instruction[(*pc) + 1]);
+        *pc += (int) offset;
+        break;
+      }
       *pc += 3;
       break;
 
     case OP_ICMPEQ:
       printf("ICMPEQ\n");
-      //the pc is incremented now but when functionality is added it should updated accordingly
+      if(pop(the_stack) == pop(the_stack)){
+        offset = bytes_to_short(&instruction[(*pc) + 1]);
+        *pc += (int) offset;
+        break;
+      }
       *pc += 3;
       break;
 
@@ -144,6 +163,8 @@ bool interpret_instruction(byte_t instruction[], unsigned int *pc, stack_t *the_
 
     case OP_OUT:
       printf("OUT\n");
+      num1 = pop(the_stack);
+      printf("%c", num1);
       *pc += 1;
       break;
 

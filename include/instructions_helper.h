@@ -5,6 +5,6 @@
 #include "stack.h"
 #include "basic_helper.h"
 
-bool interpret_instruction(byte_t instruction[], unsigned int *pc, stack_t *the_stack);
+bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack);
 
 #endif

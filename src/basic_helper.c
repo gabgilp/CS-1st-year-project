@@ -21,6 +21,14 @@ word_t byte_to_word_S (byte_t *byte){
   return num;
 }
 
+short_t bytes_to_short (byte_t *byte){
+  short_t num;
+
+  num = (*byte * 0x0100) + (*(byte + 1) * 0x01);
+
+  return num;
+}
+
 void print_full_file (byte_t bytes[], int size){
   printf("The File: \n\n");
   for(int i = 0; i < size; i++){

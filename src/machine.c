@@ -4,7 +4,7 @@
 #include "basic_helper.h"
 #include "instructions_helper.h"
 
-unsigned int program_counter;
+int program_counter;
 byte_t *bytes;
 byte_t *first_byte;
 block_t constant_pool;
@@ -38,7 +38,7 @@ int init_ijvm(char *binary_file)
   }
 
   //Remove comment to print the file byte by byte for debbuging 
-  //print_full_file(bytes, size);
+  print_full_file(bytes, size);
 
   word_t constant_pool_origin = bytes_to_word_M(first_byte + 4);
   word_t constant_pool_size = bytes_to_word_M(first_byte + 8);
@@ -104,7 +104,6 @@ byte_t *get_text(void){
 
 //TODO
 word_t tos(void){
-  printf("%i\n", the_stack->top->data);
   return the_stack->top->data;
 }
 
