@@ -15,6 +15,9 @@ word_t *stack_array = NULL;
 
 int init_ijvm(char *binary_file)
 {
+  out = stdout;
+  in = stdin;
+
   FILE *binary = fopen(binary_file, "rb");
   if(binary == NULL){
     return -1;
@@ -55,6 +58,9 @@ int init_ijvm(char *binary_file)
   the_stack = (stack_t*) malloc(sizeof(stack_t));
   the_stack->size = 0;
 
+  local_variables_size = 32;
+  local_variables = (word_t*) malloc(sizeof(word_t) * local_variables_size);
+
   fclose(binary);
   return 0;
 }
@@ -64,6 +70,7 @@ void destroy_ijvm()
   free(bytes);
 
   node_t *temp;
+
   for(int i = 1; i < the_stack->size; i++){
     temp = the_stack->top;
     the_stack->top = the_stack->top->next;
@@ -76,6 +83,7 @@ void destroy_ijvm()
 
   free(stack_array);
   free(the_stack);
+  free(local_variables);
 }
 
 void run()
@@ -113,7 +121,7 @@ bool step(void){
   if (program_counter >= text.size){
     return false;
   }
-  return interpret_instruction(text.block_starting_byte, &program_counter, the_stack);
+  return interpret_instruction(text.block_starting_byte, &program_counter, the_stack, &constant_pool);
 }
 
 int stack_size(void){
@@ -139,4 +147,12 @@ bool finished(void){
 
 byte_t get_instruction(void){
   return text.block_starting_byte[program_counter];
+}
+
+word_t get_constant(int i){
+  return bytes_to_word_M(constant_pool.block_starting_byte + (i * 4));
+}
+
+word_t get_local_variable(int i){
+  return local_variables[i];
 }

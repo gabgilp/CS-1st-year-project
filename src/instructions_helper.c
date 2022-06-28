@@ -3,14 +3,19 @@
 #include "stack.h"
 #include "ijvm.h"
 #include <stdio.h>
+#include <stdlib.h>
 
-FILE * in;
-FILE * out;
+FILE *in;
+FILE *out;
 bool is_finished = false;
+word_t *local_variables;
+int local_variables_size;
 
-bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
+bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack, block_t *constant_pool){
 
   short_t offset;
+  short_t index_short;
+  byte_t index_byte;
   word_t num1;
   word_t num2;
 
@@ -54,6 +59,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
       printf("IADD\n");
       if(the_stack->size < 2){
         printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
         return false;
       }
       num1 = pop(the_stack);
@@ -66,6 +72,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
       printf("IAND\n");
       if(the_stack->size < 2){
         printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
         return false;
       }
       num1 = pop(the_stack);
@@ -76,6 +83,11 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
 
     case OP_IFEQ:
       printf("IFEQ\n");
+      if(the_stack->size < 1){
+        printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
+        return false;
+      }
       if(pop(the_stack) == 0){
         offset = bytes_to_short(&instruction[(*pc) + 1]);
         *pc += (int) offset;
@@ -86,6 +98,11 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
 
     case OP_IFLT:
       printf("IFLT\n");
+      if(the_stack->size < 1){
+        printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
+        return false;
+      }
       if(pop(the_stack) < 0){
         offset = bytes_to_short(&instruction[(*pc) + 1]);
         *pc += (int) offset;
@@ -96,6 +113,11 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
 
     case OP_ICMPEQ:
       printf("ICMPEQ\n");
+      if(the_stack->size < 1){
+        printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
+        return false;
+      }
       if(pop(the_stack) == pop(the_stack)){
         offset = bytes_to_short(&instruction[(*pc) + 1]);
         *pc += (int) offset;
@@ -106,17 +128,27 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
 
     case OP_IINC:
       printf("IINC\n");
+      num1 = local_variables[instruction[*pc + 1]];
+      num2 = byte_to_word_S(&instruction[*pc + 2]);
+      local_variables[instruction[*pc + 1]] = num1 + num2;
       *pc += 3;
       break;
 
     case OP_ILOAD:
       printf("ILOAD\n");
+      push(the_stack, local_variables[instruction[*pc + 1]]);
       *pc += 2;
       break;
 
     case OP_IN:
-      //TODO ask wether it is input from file or from CL
       printf("IN\n");
+      byte_t input = fgetc(in);
+      if(input != EOF){
+        push(the_stack, byte_to_word_S(&input));
+        *pc += 1;
+        break;
+      }
+      push(the_stack, 0);
       *pc += 1;
       break;
 
@@ -129,6 +161,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
       printf("IOR\n");
       if(the_stack->size < 2){
         printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
         return false;
       }
       num1 = pop(the_stack);
@@ -144,6 +177,19 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
 
     case OP_ISTORE:
       printf("ISTORE\n");
+      if(the_stack->size < 1){
+        printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
+        return false;
+      }
+      num1 = pop(the_stack);
+      index_byte = instruction[(*pc) + 1];
+      if(index_byte > local_variables_size){
+        local_variables_size *= 2;
+        local_variables = (word_t*) realloc(local_variables, local_variables_size);
+      }
+      local_variables[index_byte] = num1;
+      printf("Pushed to var%i, value %i\n", index_byte, num1);
       *pc += 2;
       break;
 
@@ -151,6 +197,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
       printf("ISUB\n");
       if(the_stack->size < 2){
         printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
         return false;
       }
       num1 = pop(the_stack);
@@ -161,6 +208,9 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
 
     case OP_LDC_W:
       printf("LDC_W\n");
+      index_short = bytes_to_short(&instruction[(*pc) + 1]);
+      num1 = bytes_to_word_M(constant_pool->block_starting_byte + (index_short * 4));
+      push(the_stack, num1);
       *pc += 3;
       break;
 
@@ -171,19 +221,34 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack){
 
     case OP_OUT:
       printf("OUT\n");
+      if(the_stack->size < 1){
+        printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
+        return false;
+      }
       num1 = pop(the_stack);
-      // ask ta what to do afterwards
+      fputc(num1, out);
       *pc += 1;
       break;
 
     case OP_POP:
       printf("POP\n");
+      if(the_stack->size < 1){
+        printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
+        return false;
+      }
       pop(the_stack);
       *pc += 1;
       break;
 
     case OP_SWAP:
       printf("SWAP\n");
+      if(the_stack->size < 2){
+        printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
+        return false;
+      }
       num1 = pop(the_stack);
       num2 = pop(the_stack);
       push(the_stack, num1);
