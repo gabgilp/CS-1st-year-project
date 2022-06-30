@@ -67,20 +67,11 @@ int init_ijvm(char *binary_file)
 
 void destroy_ijvm()
 {
+  int size = the_stack->size;
+  for (int i = 0; i < size; i++) {
+    pop(the_stack);
+  }
   free(bytes);
-
-  node_t *temp;
-
-  for(int i = 1; i < the_stack->size; i++){
-    temp = the_stack->top;
-    the_stack->top = the_stack->top->next;
-    free(temp);
-  }
-  if(the_stack->size == 1){
-    temp = the_stack->top;
-    free(temp);
-  }
-
   free(stack_array);
   free(the_stack);
   free(local_variables);

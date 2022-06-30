@@ -184,7 +184,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack, bl
       }
       num1 = pop(the_stack);
       index_byte = instruction[(*pc) + 1];
-      if(index_byte > local_variables_size){
+      while(index_byte > local_variables_size){
         local_variables_size *= 2;
         local_variables = (word_t*) realloc(local_variables, local_variables_size);
       }
