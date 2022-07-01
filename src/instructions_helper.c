@@ -2,6 +2,7 @@
 #include "basic_helper.h"
 #include "stack.h"
 #include "ijvm.h"
+#include "frames_helper.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -10,14 +11,17 @@ FILE *out;
 bool is_finished = false;
 word_t *local_variables;
 int local_variables_size;
+frame_t *current_frame;
+stack_t *the_stack;
 
-bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack, block_t *constant_pool){
+bool interpret_instruction(byte_t instruction[], int *pc, block_t *constant_pool){
 
   short_t offset;
   short_t index_short;
   byte_t index_byte;
   word_t num1;
   word_t num2;
+  short_t argument_number;
 
   switch(instruction[*pc]){
 
@@ -143,18 +147,38 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack, bl
     case OP_IN:
       printf("IN\n");
       byte_t input = fgetc(in);
-      if(input != EOF){
+      if(input != 0xff){
         push(the_stack, byte_to_word_S(&input));
         *pc += 1;
         break;
       }
-      push(the_stack, 0);
+      push(the_stack, 0x00);
       *pc += 1;
       break;
 
     case OP_INVOKEVIRTUAL:
       printf("INVOKEVIRTUAL\n");
+      
+      index_short = bytes_to_short(&instruction[(*pc) + 1]);
       *pc += 3;
+      init_frame(*pc);
+      *pc = bytes_to_word_M(constant_pool->block_starting_byte + (index_short * 4));
+
+      argument_number = bytes_to_short(&instruction[*pc]);
+
+      *pc += 4;
+
+      if(current_frame->previous_frame->current_stack->size < argument_number){
+        printf("Error popping from stack, not enough stored values\n");
+        is_finished = true;
+        return false;
+      }
+
+      for(int i = 0; i < argument_number; i++){
+        num1 = pop(current_frame->previous_frame->current_stack);
+        local_variables[argument_number - 1 - i] = num1;
+      }
+
       break;
 
     case OP_IOR:
@@ -172,7 +196,10 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack, bl
 
     case OP_IRETURN:
       printf("IRETURN\n");
-      *pc += 1;
+      *pc = current_frame->previous_program_counter;
+      num1 = pop(the_stack);
+      destroy_frame();
+      push(the_stack, num1);
       break;
 
     case OP_ISTORE:
@@ -184,7 +211,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack, bl
       }
       num1 = pop(the_stack);
       index_byte = instruction[(*pc) + 1];
-      while(index_byte > local_variables_size){
+      while(index_byte >= local_variables_size){
         local_variables_size *= 2;
         local_variables = (word_t*) realloc(local_variables, local_variables_size);
       }
@@ -262,8 +289,8 @@ bool interpret_instruction(byte_t instruction[], int *pc, stack_t *the_stack, bl
       break;
 
     default:
-    is_finished = true;
-    return false;
+      is_finished = true;
+      return false;
   }
   return true;
 }

@@ -4,13 +4,13 @@
 #include "stack.h"
 #include "basic_helper.h"
 #include "instructions_helper.h"
+#include "frames_helper.h"
 
 int program_counter;
 byte_t *bytes;
 byte_t *first_byte;
 block_t constant_pool;
 block_t text;
-stack_t *the_stack;
 word_t *stack_array = NULL;
 
 int init_ijvm(char *binary_file)
@@ -22,6 +22,7 @@ int init_ijvm(char *binary_file)
   if(binary == NULL){
     return -1;
   }
+
   program_counter = 0;
 
   fseek(binary, 0, SEEK_END);
@@ -61,6 +62,12 @@ int init_ijvm(char *binary_file)
   local_variables_size = 32;
   local_variables = (word_t*) malloc(sizeof(word_t) * local_variables_size);
 
+  current_frame = (frame_t*) malloc(sizeof(frame_t));
+  current_frame->previous_program_counter = 0;
+  current_frame->current_stack = the_stack;
+  current_frame->current_locals = local_variables;
+  current_frame->previous_frame = NULL;
+
   fclose(binary);
   return 0;
 }
@@ -75,6 +82,7 @@ void destroy_ijvm()
   free(stack_array);
   free(the_stack);
   free(local_variables);
+  free(current_frame);
 }
 
 void run()
@@ -112,7 +120,7 @@ bool step(void){
   if (program_counter >= text.size){
     return false;
   }
-  return interpret_instruction(text.block_starting_byte, &program_counter, the_stack, &constant_pool);
+  return interpret_instruction(text.block_starting_byte, &program_counter, &constant_pool);
 }
 
 int stack_size(void){
