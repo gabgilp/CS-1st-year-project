@@ -235,7 +235,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, block_t *constant_pool
         index_short = bytes_to_short(&instruction[(*pc) + 1]);
         while(index_short >= local_variables_size){
           local_variables_size *= 2;
-          local_variables = (word_t*) realloc(local_variables, local_variables_size);
+          local_variables = (word_t*) realloc(local_variables, sizeof(word_t) * local_variables_size);
         }
         printf("index: %i, size: %i\n", index_short, local_variables_size);
         local_variables[index_short] = num1;
@@ -248,7 +248,7 @@ bool interpret_instruction(byte_t instruction[], int *pc, block_t *constant_pool
       index_byte = (unsigned) instruction[(*pc) + 1];
       while(index_byte >= local_variables_size){
         local_variables_size *= 2;
-        local_variables = (word_t*) realloc(local_variables, local_variables_size);
+        local_variables = (word_t*) realloc(local_variables, sizeof(word_t) * local_variables_size);
       }
       local_variables[index_byte] = num1;
       printf("Pushed to var%i, value %i\n", index_byte, num1);
