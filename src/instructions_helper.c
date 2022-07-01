@@ -10,14 +10,15 @@ FILE *in;
 FILE *out;
 bool is_finished = false;
 word_t *local_variables;
-int local_variables_size;
+unsigned int local_variables_size;
 frame_t *current_frame;
 stack_t *the_stack;
+bool is_wide = false;
 
 bool interpret_instruction(byte_t instruction[], int *pc, block_t *constant_pool){
 
   short_t offset;
-  short_t index_short;
+  uint16_t index_short;
   byte_t index_byte;
   word_t num1;
   word_t num2;
@@ -132,6 +133,17 @@ bool interpret_instruction(byte_t instruction[], int *pc, block_t *constant_pool
 
     case OP_IINC:
       printf("IINC\n");
+
+      if(is_wide){
+        index_short = bytes_to_short(&instruction[(*pc) + 1]);
+        num1 = local_variables[index_short];
+        num2 = byte_to_word_S(&instruction[*pc + 3]);
+        local_variables[instruction[*pc + 1]] = num1 + num2;
+        *pc += 4;
+        is_wide = false;
+        break;
+      }
+
       num1 = local_variables[instruction[*pc + 1]];
       num2 = byte_to_word_S(&instruction[*pc + 2]);
       local_variables[instruction[*pc + 1]] = num1 + num2;
@@ -140,6 +152,14 @@ bool interpret_instruction(byte_t instruction[], int *pc, block_t *constant_pool
 
     case OP_ILOAD:
       printf("ILOAD\n");
+      if(is_wide){
+        index_short = bytes_to_short(&instruction[(*pc) + 1]);
+        push(the_stack, local_variables[index_short]);
+        *pc += 3;
+        is_wide = false;
+        break;
+      }
+
       push(the_stack, local_variables[instruction[*pc + 1]]);
       *pc += 2;
       break;
@@ -210,7 +230,22 @@ bool interpret_instruction(byte_t instruction[], int *pc, block_t *constant_pool
         return false;
       }
       num1 = pop(the_stack);
-      index_byte = instruction[(*pc) + 1];
+
+      if(is_wide){
+        index_short = bytes_to_short(&instruction[(*pc) + 1]);
+        while(index_short >= local_variables_size){
+          local_variables_size *= 2;
+          local_variables = (word_t*) realloc(local_variables, local_variables_size);
+        }
+        printf("index: %i, size: %i\n", index_short, local_variables_size);
+        local_variables[index_short] = num1;
+        printf("Pushed to var%i, value %i\n", index_short, num1);
+        *pc += 3;
+        is_wide = false;
+        break;
+      }
+
+      index_byte = (unsigned) instruction[(*pc) + 1];
       while(index_byte >= local_variables_size){
         local_variables_size *= 2;
         local_variables = (word_t*) realloc(local_variables, local_variables_size);
@@ -285,7 +320,9 @@ bool interpret_instruction(byte_t instruction[], int *pc, block_t *constant_pool
 
     case OP_WIDE:
       printf("WIDE\n");
+      is_wide = true;
       *pc += 1;
+      return interpret_instruction(instruction, pc, constant_pool);
       break;
 
     default:

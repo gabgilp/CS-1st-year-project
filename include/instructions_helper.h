@@ -11,7 +11,7 @@ extern FILE *in;
 extern FILE *out;
 extern bool is_finished;
 extern word_t *local_variables;
-extern int local_variables_size;
+extern unsigned int local_variables_size;
 extern frame_t *current_frame;
 extern stack_t *the_stack;
 
